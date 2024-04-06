@@ -15,13 +15,13 @@ delete security zones security-zone untrust
 
 4) Try to ping from host3 to host1 (Untrust to Trust)
 
-jcluser@Host1> ping 10.100.11.2 rapid count 10           
-PING 10.100.12.2 (10.100.12.2): 56 data bytes
+jcluser@Host1> ping 10.100.13.2 rapid count 10    
+PING 10.100.13.2 (10.100.13.2): 56 data bytes
 ..........
---- 10.100.12.2 ping statistics ---
 10 packets transmitted, 0 packets received, 100% packet loss
 
-5) You can see that the ping fails, this is because of the inherent nature of the firewall, if an interface hasn't been configured in a security zone, then packets will not be allowed through the interface
+5) You can see that the ping fails, this is because of the inherent nature of the firewall, 
+if an interface hasn't been configured in a security zone, then packets will not be allowed through the interface.
 
 6) Check the vSRX for traffic on the interface
 
@@ -154,7 +154,7 @@ cy-logical-system-00
 not allow traffic from the untrust zone to initiate ping traffic by default, only by policy we specifically allow. Lets say we want to allow
 https (port 443) traffic from the untrust device (host3) to host1. In this case we want to simulate that host1 is an internal web server that we 
 want external clients to have access to. Lets create a policy to allow the traffic from the untrust zone to the trust zone. But first lets
-show that the connection fails without the security policy:
+show that the connection fails without the security policy. We will use a telnet session on port 443 to simulate the https traffic:
 
 jcluser@Host3> telnet port 443 10.100.11.2    
 Trying 10.100.11.2...
@@ -186,7 +186,7 @@ jcluser@vSRX1> show security policies hit-count
 Logical system: root-logical-system
  Index   From zone        To zone           Name           Policy count
  1       trust            untrust           ALLOW_ICMP     10           
- 2       untrust          trust             ALLOW_HTTPS    4              
+ 2       untrust          trust             ALLOW_HTTPS    1              
 
 jcluser@vSRX1> show security flow session    
 Session ID: 21, Policy name: ALLOW_HTTPS/5, State: Stand-alone, Timeout: 2, Valid
