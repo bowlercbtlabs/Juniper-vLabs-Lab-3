@@ -156,13 +156,19 @@ https (port 443) traffic from the untrust device (host3) to host1. In this case 
 want external clients to have access to. Lets create a policy to allow the traffic from the untrust zone to the trust zone. But first lets
 show that the connection fails without the security policy:
 
-jcluser@Host3> ssh 10.100.11.2 port 443
+jcluser@Host3> telnet port 443 10.100.11.2    
+Trying 10.100.11.2...
 
-XXXXXXXXXXX
+jcluser@vSRX1> show security packet-drop records    
+04:11:14.929207:LSYS-ID-00 10.100.13.2/53822-->10.100.11.2/443;tcp,ipid-51119,ge-0/0/2.0,Dropped by POLICY:Denied by Policy  default-po
+licy-logical-system-00
+04:11:11.890692:LSYS-ID-00 10.100.13.2/53822-->10.100.11.2/443;tcp,ipid-30639,ge-0/0/2.0,Dropped by POLICY:Denied by Policy  default-po
+licy-logical-system-00
+04:11:09.168850:LSYS-ID-00 10.100.13.2/51320-->10.100.11.2/443;tcp,ipid-11439,ge-0/0/2.0,Dropped by POLICY:Denied by Policy  default-po
+licy-logical-system-00
+Total packet-drop records: 3
 
-jcluser@vSRX1> show security packet-drop records 
-
-XXXXXXXXXXX
+*** We can see from above the 443 traffic is being denied by policy on the firewall ***
 
 set security policies from-zone untrust to-zone trust policy ALLOW_HTTPS match source-address any
 set security policies from-zone untrust to-zone trust policy ALLOW_HTTPS match destination-address any
@@ -171,37 +177,22 @@ set security policies from-zone untrust to-zone trust policy ALLOW_HTTPS then pe
 
 19)  Try the https (443) connection from host3 to host1 again:
 
-jcluser@Host1> ssh 10.100.12.2    
-The authenticity of host '10.100.12.2 (10.100.12.2)' can't be established.
-ECDSA key fingerprint is SHA256:aGF721Rr++omV2vC4OFKqC9VYm+HzbqWXbH/WtFlmJ0.
-Are you sure you want to continue connecting (yes/no)?
+jcluser@Host3> telnet port 443 10.100.11.2    
+Trying 10.100.11.2...
+telnet: connect to address 10.100.11.2: Connection refused
+telnet: Unable to connect to remote host
 
-jcluser@vSRX1> show security policies hit-count                                                    
+jcluser@vSRX1> show security policies hit-count    
 Logical system: root-logical-system
  Index   From zone        To zone           Name           Policy count
- 1       trust            trust             ALLOW_ICMP     20           
- 2       trust            trust             ALLOW_SSH      1            
+ 1       trust            untrust           ALLOW_ICMP     10           
+ 2       untrust          trust             ALLOW_HTTPS    4              
 
- jcluser@vSRX1> show security flow session | refresh                                                
----(refreshed at 2024-04-03 20:53:20 UTC)---
-Session ID: 149, Policy name: ALLOW_SSH/5, State: Stand-alone, Timeout: 1786, Valid
-  In: 10.100.11.2/58479 --> 10.100.12.2/22;tcp, Conn Tag: 0x0, If: ge-0/0/0.0, Pkts: 6, Bytes: 1785, 
-  Out: 10.100.12.2/22 --> 10.100.11.2/58479;tcp, Conn Tag: 0x0, If: ge-0/0/1.0, Pkts: 4, Bytes: 1581, 
-
-20)  It appears the connection is working! go ahead and create a user account on host2 and try to login:
-
-jcluser@Host2# set system login user admin class read-only authentication plain-text-password
-
-jcluser@Host1> ssh admin@10.100.12.2 
-Password:
---- JUNOS 18.3R1.9 Kernel 64-bit  JNPR-11.0-20180816.8630ec5_buil
-admin@Host2> 
-
-jcluser@vSRX1> show security flow session | refresh    
----(refreshed at 2024-04-03 20:56:41 UTC)---
-Session ID: 150, Policy name: ALLOW_SSH/5, State: Stand-alone, Timeout: 1792, Valid
-  In: 10.100.11.2/53935 --> 10.100.12.2/22;tcp, Conn Tag: 0x0, If: ge-0/0/0.0, Pkts: 20, Bytes: 3417, 
-  Out: 10.100.12.2/22 --> 10.100.11.2/53935;tcp, Conn Tag: 0x0, If: ge-0/0/1.0, Pkts: 18, Bytes: 3497, 
+jcluser@vSRX1> show security flow session    
+Session ID: 21, Policy name: ALLOW_HTTPS/5, State: Stand-alone, Timeout: 2, Valid
+  In: 10.100.13.2/56238 --> 10.100.11.2/443;tcp, Conn Tag: 0x0, If: ge-0/0/2.0, Pkts: 1, Bytes: 64, 
+  Out: 10.100.11.2/443 --> 10.100.13.2/56238;tcp, Conn Tag: 0x0, If: ge-0/0/0.0, Pkts: 1, Bytes: 40, 
 Total sessions: 1
 
-21)  It appears to be working! you have successfully created an ssh session from host1 to host2 using the trust security zone
+20)  It appears the connection is working! you have successfully created an https (443) session from host3 to host1 using the 
+security policy from the untrust zone to the trust zone! Congratulations that is the end of the lab!
